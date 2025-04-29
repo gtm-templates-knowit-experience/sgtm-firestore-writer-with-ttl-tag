@@ -1,0 +1,6 @@
+homepage: "https://github.com/gtm-templates-knowit-experience/"
+documentation: "https://github.com/gtm-templates-knowit-experience/sgtm-firestore-writer-with-ttl-tag"
+versions:
+  # Latest version
+  - sha: 66c0aaf5e77903bbba37e2b9e8a5c8319bca6839
+    changeNotes: Initial release.
