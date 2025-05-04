@@ -13,7 +13,6 @@ The unique function with this Tag is that it allows you to write [**TTL (Time To
 
 <img src="images/firestore-writer-with-ttl-sgtm-tag-template.png" alt="Firestore Writer with Time To Live SGTM Tag Template" />
 
-The functionality and look of the Tag Template is somewhat similar to the [**Firestore Writer Tag**](https://github.com/stape-io/firestore-writer-tag).
+Since [**Server-side GTM Firestore API**](https://developers.google.com/tag-platform/tag-manager/server-side/api#firestore) cannot directly utilize the standard to set **TTL**, this custom Template sends data directly to the [**Firestore API**](https://cloud.google.com/firestore/docs/reference/rest/v1/projects.databases.documents) using the **sendHttpRequest** function. Additionally, because the Server-side GTM API lacks native **Date** object support, the Template includes its own custom date-math routine to accurately create and manage dates.
 
-However, this Tag Template integrates with the Firestore API in a different way, and calculates Date and Time needed for TTL. This makes it possible to write TTL to Firestore directly from Server-side GTM.
-
+The functionality and look of the Tag Template is somewhat similar to the [Firestore Writer Tag](https://github.com/stape-io/firestore-writer-tag), and some elements have been borrowed from that Template.
