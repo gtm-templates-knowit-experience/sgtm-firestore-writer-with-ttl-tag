@@ -10,6 +10,8 @@ const getContainerVersion = require('getContainerVersion');
 const Math = require('Math');
 const Object = require('Object');
 const makeInteger = require('makeInteger');
+const makeString = require('makeString');
+const encodeUri = require('encodeUri');
 const encodeUriComponent = require('encodeUriComponent');
 
 // —––––––––––––––––– CONSTANTS –––––––––––––––––—
@@ -32,9 +34,7 @@ const isLoggingEnabled = determinateIsLoggingEnabled();
 // —––––––––––––––––– HELPERS –––––––––––––––––—
 function pad(num, width) {
   let s = '' + num;
-  while (s.length < width) {
-    s = '0' + s;
-  }
+  while (s.length < width) s = '0' + s;
   return s;
 }
 
@@ -46,9 +46,9 @@ function buildNumericIso(ts) {
   // time‐of‐day
   let msec = ts % MS_PER_DAY;
   const hour = Math.floor(msec / MS_PER_HOUR);
-	msec = msec - hour * MS_PER_HOUR;
+    msec = msec - hour * MS_PER_HOUR;
   const minute = Math.floor(msec / MS_PER_MINUTE);
-	msec = msec - minute * MS_PER_MINUTE;
+    msec = msec - minute * MS_PER_MINUTE;
   const second = Math.floor(msec / 1000);
   const mill = msec - second * 1000;
 
@@ -81,7 +81,7 @@ function buildNumericIso(ts) {
   }
 
   const month = monthIndex + 1;
-  const day   = days + 1;
+  const day = days + 1;
 
   return (
     pad(year,4) + '-' + pad(month,2) + '-' + pad(day,2) +
@@ -125,6 +125,27 @@ function wrapValue(v) {
     return { mapValue: { fields: flds } };
   }
   return { nullValue: null };
+}
+
+/**
+ * Quote Firestore field paths that contain reserved characters.
+ * Reserved: '.', '*', '~', '/', '[', ']', ' ' (space)
+ */
+function quoteFieldPath(field) {
+  const s = makeString(field);
+  let needs = false;
+  for (let i = 0; i < s.length; i = i + 1) {
+    const ch = s.charAt(i);
+    if (ch === '.' || ch === '*' || ch === '~' || ch === '/' || ch === '[' || ch === ']' || ch === ' ') {
+      needs = true;
+      break;
+    }
+  }
+  if (!needs) return s;
+
+  // Escape backticks via split/join
+  const escaped = s.split('`').join('\\`');
+  return '`' + escaped + '`';
 }
 
 // —––––––––––––––––– BUILD FIRESTORE FIELDS –––––––––––––––––—
@@ -175,29 +196,35 @@ if (data.addEventData) {
 }
 
 // —––––––––––––––––– FIRESTORE REST CALL –––––––––––––––––—
-const payload = { fields: fields };
 const projectId = data.gcpProjectId;
-const rawPath = data.firebasePath;  // e.g. "myCollection" or "myCollection/12345"
-const baseUrl   =
+
+// Normalize rawPath (avoid accidental leading '/')
+let rawPath = makeString(data.firestorePath || '');
+if (rawPath.length > 0 && rawPath.charAt(0) === '/') {
+  rawPath = rawPath.substring(1);
+}
+
+// Build base URL: use encodeUri for PATH segments
+const baseUrl =
   'https://firestore.googleapis.com/v1/projects/' +
-  projectId +
+  encodeUri(projectId) +
   '/databases/(default)/documents/' +
-  rawPath;
+  encodeUri(rawPath);
 
 let url, method;
 
-// if user gave a full path (collection + ID)…
+// if user gave a full path (collection + ID)
 if (rawPath.indexOf('/') > -1) {
-  // always PATCH to upsert
   url    = baseUrl;
   method = 'PATCH';
 
-  if (data.firebaseMerge) {
+  if (data.firestoreMerge) {
     const fieldNames = Object.keys(fields);
     for (let i = 0; i < fieldNames.length; i = i + 1) {
       const fp = fieldNames[i];
+      const quoted = quoteFieldPath(fp); // backtick when needed
       url = url + (i === 0 ? '?' : '&') + 
-            'updateMask.fieldPaths=' + encodeUriComponent(fp);
+			'updateMask.fieldPaths=' + encodeUriComponent(quoted);
     }
   }
 }
@@ -246,18 +273,3 @@ sendHttpRequest(
     data.gtmOnFailure();
   }
 );
-function determinateIsLoggingEnabled() {
-  if (!data.logType) {
-    return isDebug;
-  }
-
-  if (data.logType === 'no') {
-    return false;
-  }
-
-  if (data.logType === 'debug') {
-    return isDebug;
-  }
-
-  return data.logType === 'always';
-}
