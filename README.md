@@ -16,3 +16,5 @@ The unique function with this Tag is that it allows you to write [**TTL (Time To
 Since [**Server-side GTM Firestore API**](https://developers.google.com/tag-platform/tag-manager/server-side/api#firestore) cannot directly utilize the standard to set **TTL**, this custom Template sends data directly to the [**Firestore API**](https://cloud.google.com/firestore/docs/reference/rest/v1/projects.databases.documents) using the **sendHttpRequest** function. Additionally, because the Server-side GTM API lacks native **Date** object support, the Template includes its own custom date-math routine to create and manage dates.
 
 The functionality and look of the Tag Template is somewhat similar to the [Firestore Writer Tag](https://github.com/stape-io/firestore-writer-tag), and some elements have been borrowed from that Template.
+
+Solution by [**Eivind Savio**](https://www.savio.no/google-tag-manager/write-ttl-to-firestore-using-server-side-gtm) from [**Knowit AI & Analytics**](https://www.knowit.no/hva-vi-tilbyr/merkevare-og-markedsforing/maling-og-dataanalyse/) (Oslo, Norway). Not officially supported by Knowit.
