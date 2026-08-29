@@ -1,12 +1,9 @@
 const JSON = require('JSON');
 const getAllEventData = require('getAllEventData');
 const getTimestampMillis = require('getTimestampMillis');
-const getRequestHeader = require('getRequestHeader');
 const getGoogleAuth = require('getGoogleAuth');
 const sendHttpRequest = require('sendHttpRequest');
 const getType = require('getType');
-const logToConsole = require('logToConsole');
-const getContainerVersion = require('getContainerVersion');
 const Math = require('Math');
 const Object = require('Object');
 const makeInteger = require('makeInteger');
@@ -19,18 +16,6 @@ const MS_PER_DAY = 86400000;
 const MS_PER_HOUR = 3600000;
 const MS_PER_MINUTE = 60000;
 
-// Container & logging
-const containerVersion = getContainerVersion();
-const isDebug = containerVersion.debugMode;
-const traceId = getRequestHeader('trace-id');
-function determinateIsLoggingEnabled() {
-  if (!data.logType) return isDebug;
-  if (data.logType === 'no') return false;
-  if (data.logType === 'debug') return isDebug;
-  return data.logType === 'always';
-}
-const isLoggingEnabled = determinateIsLoggingEnabled();
-
 // —––––––––––––––––– HELPERS –––––––––––––––––—
 function pad(num, width) {
   let s = '' + num;
@@ -40,7 +25,7 @@ function pad(num, width) {
 
 /**
  * Build a Firestore‐valid ISO timestamp:
- *   ms since epoch → "YYYY-MM-DDTHH:mm:ss.SSSZ"
+ *  ms since epoch → "YYYY-MM-DDTHH:mm:ss.SSSZ"
  */
 function buildNumericIso(ts) {
   // time‐of‐day
@@ -223,8 +208,8 @@ if (rawPath.indexOf('/') > -1) {
     for (let i = 0; i < fieldNames.length; i = i + 1) {
       const fp = fieldNames[i];
       const quoted = quoteFieldPath(fp); // backtick when needed
-      url = url + (i === 0 ? '?' : '&') + 
-			'updateMask.fieldPaths=' + encodeUriComponent(quoted);
+      url = url + (i === 0 ? '?' : '&') +
+            'updateMask.fieldPaths=' + encodeUriComponent(quoted);
     }
   }
 }
@@ -246,30 +231,10 @@ sendHttpRequest(
   },
   JSON.stringify({ fields: fields })
 ).then(
-  function(res) {
-    if (isLoggingEnabled) {
-      // parse response body (assumed valid JSON)
-      const body = JSON.parse(res.body || '{}');
-      let docId = '';
-      if (body.name) {
-        const parts = body.name.split('/');
-        docId = parts[parts.length - 1];
-      }
-      logToConsole(
-        JSON.stringify({
-          Name: 'Firestore',
-          Type: 'Message',
-          TraceId: traceId,
-          EventName: 'Write',
-          DocumentId: docId,
-          DocumentInput: fields
-        })
-      );
-    }
+  function() {
     data.gtmOnSuccess();
   },
-  function(err) {
-    logToConsole('Firestore ' + method + ' failed: ' + err);
+  function() {
     data.gtmOnFailure();
   }
 );
